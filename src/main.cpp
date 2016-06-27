@@ -8,7 +8,6 @@ using namespace pixeledit;
 GLFWwindow* window;
 
 int W = 800, H = 600;
-int CW = 4000, CH = 4000;
 
 void initGL() {
   glfwInit();
@@ -25,6 +24,8 @@ void initGL() {
 
   // Callback implemented in input.cpp
   glfwSetKeyCallback(window, keyCallback);
+  glfwSetMouseButtonCallback(window, mouseButtonCallback);
+  glfwSetCursorPosCallback(window, cursorPosCallback);
 }
 
 /** Handles ESC keypress to close window faster for debug */
@@ -33,6 +34,12 @@ class DebugListener : public InputListener {
     if (e.key == GLFW_KEY_ESCAPE && e.action == GLFW_PRESS) {
       glfwSetWindowShouldClose(window, true);
     }
+  }
+  virtual void mouseEvent(MouseEvent& e) override {
+    double x, y;
+    glfwGetCursorPos(e.window, &x, &y);
+  }
+  virtual void cursorPosEvent(CursorPosEvent& e) override {
   }
 };
 

@@ -6,7 +6,8 @@ using namespace pixeledit;
 /**************
  * InputEvent *
  **************/
-InputEvent::InputEvent() {
+InputEvent::InputEvent(GLFWwindow* _window) {
+  window = _window;
 }
 InputEvent::~InputEvent() {
 }
@@ -14,13 +15,36 @@ InputEvent::~InputEvent() {
 /************
  * KeyEvent *
  ************/
-KeyEvent::KeyEvent(int _key, int _scancode, int _action, int _mods) {
+KeyEvent::KeyEvent(GLFWwindow* _window, int _key, int _scancode,
+                   int _action, int _mods)
+  : InputEvent(_window) {
   key = _key;
   scancode = _scancode;
   action = _action;
   mods = _mods;
 }
 KeyEvent::~KeyEvent() {};
+
+/**************
+ * MouseEvent *
+ **************/
+MouseEvent::MouseEvent(GLFWwindow* _window, int _button, int _action, int _mods)
+	: InputEvent(_window) {
+  button = _button;
+  action = _action;
+  mods = _mods;
+}
+MouseEvent::~MouseEvent() {};
+
+/******************
+ * CursorPosEvent *
+ ******************/
+CursorPosEvent::CursorPosEvent(GLFWwindow* _window, double _x, double _y)
+  : InputEvent(_window) {
+  x = _x;
+  y = _y;
+}
+CursorPosEvent::~CursorPosEvent() {};
 
 /*****************
  * InputListener *
@@ -54,6 +78,10 @@ InputListener& InputListener::operator=(InputListener copy) {
 
 void InputListener::keyEvent(KeyEvent& e) {
 }
+void InputListener::cursorPosEvent(CursorPosEvent& e) {
+}
+void InputListener::mouseEvent(MouseEvent& e) {
+}
 
 /****************
  * InputHandler *
@@ -68,6 +96,12 @@ void InputHandler::update() {
     for (int j = 0; j < listeners.size(); ++j) {
       if (KeyEvent* ke = dynamic_cast<KeyEvent*>(e)) {
         listeners[j]->keyEvent(*ke);
+      }
+      else if (MouseEvent* ke = dynamic_cast<MouseEvent*>(e)) {
+        listeners[j]->mouseEvent(*ke);
+      }
+      else if (CursorPosEvent* ke = dynamic_cast<CursorPosEvent*>(e)) {
+        listeners[j]->cursorPosEvent(*ke);
       }
     }
     eventQueue.pop();
@@ -89,7 +123,7 @@ void InputHandler::removeListener(InputListener* listener) {
   }
 }
 
-void InputHandler::queueEvent(KeyEvent* e) {
+void InputHandler::queueEvent(InputEvent* e) {
   eventQueue.push(e);
 }
 
@@ -100,6 +134,17 @@ InputHandler& pixeledit::getInputHandler() {
 
 void pixeledit::keyCallback(GLFWwindow* w, int key,
                  int scancode, int action, int mods) {
-  KeyEvent* event = new KeyEvent(key, scancode, action, mods);
+  KeyEvent* event = new KeyEvent(w, key, scancode, action, mods);
+  getInputHandler().queueEvent(event);
+}
+
+void pixeledit::cursorPosCallback(GLFWwindow* window, double x, double y) {
+  CursorPosEvent* event = new CursorPosEvent(window, x, y);
+  getInputHandler().queueEvent(event);
+}
+
+void pixeledit::mouseButtonCallback(GLFWwindow* window, int button,
+                                    int action, int mods) {
+  MouseEvent* event = new MouseEvent(window, button, action, mods);
   getInputHandler().queueEvent(event);
 }
