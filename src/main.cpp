@@ -49,6 +49,7 @@ int main(int argc, char** argv) {
       break;
     }
     glfwPollEvents();
+    getInputHandler().update();
     glfwSwapBuffers(window);
   }
   return 0;

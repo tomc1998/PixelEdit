@@ -1,11 +1,14 @@
 #include <GLFW/glfw3.h>
 #include "input.h"
+#include <queue>
 using namespace pixeledit;
 
 /**************
  * InputEvent *
  **************/
 InputEvent::InputEvent() {
+}
+InputEvent::~InputEvent() {
 }
 
 /************
@@ -17,11 +20,18 @@ KeyEvent::KeyEvent(int _key, int _scancode, int _action, int _mods) {
   action = _action;
   mods = _mods;
 }
+KeyEvent::~KeyEvent() {};
 
 /*****************
  * InputListener *
  *****************/
 InputListener::InputListener() {
+}
+
+InputListener::InputListener(InputListener const& copy) {
+	for (unsigned int i = 0; i < copy.handlers.size(); ++i) {
+		handlers.push_back(copy.handlers[i]);
+  }
 }
 
 InputListener::~InputListener() {
@@ -30,10 +40,15 @@ InputListener::~InputListener() {
   }
 }
 
-InputListener& InputListener::operator=(InputListener const& copy) {
-	for (unsigned int i = 0; i < copy.handlers.size(); ++i) {
-		handlers.push_back(copy.handlers[i]);
+namespace pixeledit {
+  void swap(InputListener& a, InputListener& b) {
+    std::swap(a.handlers, b.handlers);
   }
+}
+
+// Copy in the copy
+InputListener& InputListener::operator=(InputListener copy) {
+  swap(*this, copy);
   return *this;
 }
 
@@ -47,6 +62,17 @@ InputHandler::InputHandler() {
 }
 
 void InputHandler::update() {
+  unsigned int len = eventQueue.size();
+  for (int i = 0; i < len; ++i) {
+    InputEvent* e = eventQueue.front();
+    for (int j = 0; j < listeners.size(); ++j) {
+      if (KeyEvent* ke = dynamic_cast<KeyEvent*>(e)) {
+        listeners[j]->keyEvent(*ke);
+      }
+    }
+    eventQueue.pop();
+    delete e;
+  }
 }
 
 void InputHandler::addListener(InputListener* listener) {
@@ -63,6 +89,10 @@ void InputHandler::removeListener(InputListener* listener) {
   }
 }
 
+void InputHandler::queueEvent(KeyEvent* e) {
+  eventQueue.push(e);
+}
+
 InputHandler* pixeledit::inputHandler = new InputHandler();
 InputHandler& pixeledit::getInputHandler() {
   return *inputHandler;
@@ -70,5 +100,6 @@ InputHandler& pixeledit::getInputHandler() {
 
 void pixeledit::keyCallback(GLFWwindow* w, int key,
                  int scancode, int action, int mods) {
-  KeyEvent
+  KeyEvent* event = new KeyEvent(key, scancode, action, mods);
+  getInputHandler().queueEvent(event);
 }
